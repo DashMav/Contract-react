@@ -1,0 +1,51 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  background-color: #1a1b1c;
+  color: rgb(230, 118, 37);
+}
+
+/* Aligns controls (dropdown + buttons) to the right */
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+/* Wider dropdown */
+.contract-dropdown {
+  padding: 8px;
+  font-size: 16px;
+  width: 400px; /* Increased width */
+  background-color: #374151;
+  color: white;
+  border: none;
+  border-radius: 5px;
+}
+
+.contract-dropdown:hover {
+  background-color: #4b5563;
+}
+
+/* Button group moved to the right */
+.button-group {
+  display: flex;
+  gap: 10px;
+}
+
+button {
+  padding: 6px 12px;
+  font-size: 16px;
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #000000;
+  color: rgb(230, 118, 37);
+}

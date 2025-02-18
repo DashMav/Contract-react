@@ -1,14 +1,53 @@
-import streamlit as st
+
+from fastapi import FastAPI, File, UploadFile, Form
+from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from typing import List
 import PyPDF2
 import docx
+import io
+
 import google.generativeai as genai
 
-
+# Configure the Generative AI model
 genai.configure(api_key="AIzaSyCynKXJaxbF60nm-ZPVd7RhhqAiByzXhLI")
-
 model = genai.GenerativeModel("gemini-1.5-flash")
 
+app = FastAPI()
 
+# Allow frontend to call the backend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],  # React frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to the Contract Compliance Checker!"}
+# Function to extract text from uploaded files
+def extract_text(file: UploadFile):
+    file_data = file.file.read()
+    if file.content_type == "application/pdf":
+        pdf_reader = PyPDF2.PdfReader(io.BytesIO(file_data))
+        return "\n".join(page.extract_text() for page in pdf_reader.pages)
+    elif file.content_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+        doc = docx.Document(io.BytesIO(file_data))
+        return "\n".join([paragraph.text for paragraph in doc.paragraphs])
+    else:
+        return file_data.decode("utf-8")
+
+# Function to combine guidelines and frameworks
+def combine_guidelines_and_frameworks(user_guidelines_text, frameworks):
+    user_rules = user_guidelines_text.splitlines() if user_guidelines_text else []
+    formatted_user_guidelines = "\n".join([f"- {rule.strip()}" for rule in user_rules if rule.strip()])
+    formatted_frameworks = "\n".join([f"- {key}: {url}" for key, url in frameworks.items()])
+    return f"User Guidelines:\n{formatted_user_guidelines}\n\nFrameworks:\n{formatted_frameworks}"
+
+# Dummy function for framework categories
 def get_framework_categories():
     return {
         "Loan Agreement": {
@@ -31,43 +70,38 @@ def get_framework_categories():
         }
     }
 
-# Function to extract text from uploaded files
-def extract_text(file):
-    if file.type == "application/pdf":
-        pdf_reader = PyPDF2.PdfReader(file)
-        return "\n".join(page.extract_text() for page in pdf_reader.pages)
-    elif file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-        doc = docx.Document(file)
-        return "\n".join([paragraph.text for paragraph in doc.paragraphs])
-    else:
-        return file.read().decode("utf-8")
-
-# Function to combine frameworks and user guidelines
-def combine_guidelines_and_frameworks(user_guidelines_text, frameworks):
-    # Format user-uploaded guidelines
-    user_rules = user_guidelines_text.splitlines() if user_guidelines_text else []
-    formatted_user_guidelines = "\n".join([f"- {rule.strip()}" for rule in user_rules if rule.strip()])
-    
-    # Format predefined frameworks
-    formatted_frameworks = "\n".join([f"- {key}: {url}" for key, url in frameworks.items()])
-    
-    # Combine both
-    combined_guidelines = f"User Guidelines:\n{formatted_user_guidelines}\n\nFrameworks:\n{formatted_frameworks}"
-    return combined_guidelines
-
-# Function to check contract compliance using Gemini
-def check_contract_compliance_gemini(contract_text, combined_guidelines):
+# Endpoint for analyzing contracts
+@app.post("/analyze")
+async def analyze(
+    contractType: str = Form(...),
+    contracts: List[UploadFile] = File(...),
+    guidelines: UploadFile = File(None),
+):
     try:
-        prompt = f"""
-        You are tasked with reviewing the following agreement for compliance with legal standards and guidelines.
+        # Get predefined frameworks
+        frameworks = get_framework_categories().get(contractType, {})
+        user_guidelines_text = ""
 
-        Contract:
-        {contract_text}
+        # Extract text from guidelines file
+        if guidelines:
+            user_guidelines_text = extract_text(guidelines)
 
-        Guidelines:
-        {combined_guidelines}
+        combined_guidelines = combine_guidelines_and_frameworks(user_guidelines_text, frameworks)
 
-       Provide:
+        results = []
+
+        for contract in contracts:
+            contract_text = extract_text(contract)
+            prompt = f"""
+            You are tasked with reviewing the following agreement for compliance with legal standards and guidelines.
+
+            Contract:
+            {contract_text}
+
+            Guidelines:
+            {combined_guidelines}
+
+           Provide:
           You are a Banker tasked with reviewing a agreement for compliance with the  guidelines and frameworks. Carefully analyze the contract against the uploaded guidelines, and provide a detailed assessment for each guideline.
         Keep it domain specific 
         where it is high ,medium and low make it bold.
@@ -101,43 +135,9 @@ def check_contract_compliance_gemini(contract_text, combined_guidelines):
         4. Highlight missing clauses or additional legal frameworks required.
         if any framework is not applicable related to contract user is uploading skip that framework and check with others.
         """
-        response = model.generate_content([prompt])
-        return response.text
+            response = model.generate_content([prompt])
+            results.append({"fileName": contract.filename, "analysis": response.text})
+
+        return JSONResponse({"status": "success", "results": results})
     except Exception as e:
-        st.error(f"An error occurred: {e}")
-        return None
-
-def app():
-    st.title("Contract Compliance Checker")
-    st.markdown("Upload agreements and guidelines to check compliance with relevant legal frameworks and user-provided rules.")
-
-    # Contract type selection
-    contract_type = st.selectbox("Select the type of contract", list(get_framework_categories().keys()))
-
-    # File uploaders
-    uploaded_guidelines = st.file_uploader("Upload Guidelines (Optional)", type=["txt", "pdf", "docx"])
-    uploaded_contracts = st.file_uploader("Upload Agreement", type=["pdf", "docx"], accept_multiple_files=True)
-
-    if contract_type and uploaded_contracts:
-        # Get predefined frameworks for the selected category
-        selected_frameworks = get_framework_categories().get(contract_type, {})
-
-        
-        user_guidelines_text = ""
-        if uploaded_guidelines:
-            user_guidelines_text = extract_text(uploaded_guidelines)
-
-        # Combine uploaded guidelines and frameworks
-        combined_guidelines = combine_guidelines_and_frameworks(user_guidelines_text, selected_frameworks)
-
-        # Analyze each uploaded contract
-        for i, contract in enumerate(uploaded_contracts):
-            contract_text = extract_text(contract)
-            st.write(f"**Analyzing Contract {i + 1}: {contract.name}**")
-
-            # Check compliance
-            analysis_results = check_contract_compliance_gemini(contract_text, combined_guidelines)
-            st.markdown(analysis_results)
-
-if __name__ == "__main__":
-    app()
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)

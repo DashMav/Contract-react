@@ -1,8 +1,10 @@
 // App.js
-import  { useState } from "react";
+import { useState } from "react";
+import { Routes, Route } from 'react-router-dom';
 import axios from "axios";
-import { Button, Card,  Table, Upload, Spin, Select } from "antd";
+import { Button, Card, Table, Upload, Spin, Select } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
+import ChatArea from "./components/Chatarea";
 
 const { Option } = Select;
 
@@ -17,6 +19,16 @@ const App = () => {
     setContractFiles([...contractFiles, file]);
     return false; // Prevent default upload behavior
   };
+
+  <div className="main-content">
+                <Routes>
+                    {/* <Route path="/" element={<HomePage />} /> */}
+                     <Route path="/Chat" element={<ChatArea />} />
+                </Routes>
+            </div>
+
+              
+            
 
   const handleUploadGuidelines = (file) => {
     setGuidelinesFile(file);
@@ -41,11 +53,12 @@ const App = () => {
       });
       setAnalysisResults(response.data);
     } catch (error) {
-      console.error(error);
-      alert("An error occurred while analyzing contracts.");
+      console.error("Error Response:", error.response ? error.response.data : error.message);
+      alert("An error occurred while analyzing contracts. Check console for details.");
     } finally {
       setLoading(false);
     }
+    
   };
 
   return (
@@ -95,14 +108,24 @@ const App = () => {
       >
         Analyze Contracts
       </Button>
-
+      <Card style={{ marginBottom: "20px" }}>
+        <h3>Step 3: Chat with Compliance Assistant</h3>
+        <ChatArea />
+      </Card>
       {loading && <Spin style={{ marginTop: "20px" }} />}
 
-      {analysisResults && (
+      {analysisResults && analysisResults.results && (
         <Card style={{ marginTop: "20px" }}>
           <h3>Analysis Results</h3>
           <Table
-            dataSource={analysisResults}
+            dataSource={analysisResults.results.map((result, index) => ({
+              key: index,
+              guideline: result.analysis, // Adjust based on actual API response
+              compliance: "N/A", // Modify if API returns compliance details
+              reference: "N/A",
+              risk: "N/A",
+              recommendations: "N/A",
+            }))}
             columns={[
               { title: "Guideline", dataIndex: "guideline", key: "guideline" },
               { title: "Compliance", dataIndex: "compliance", key: "compliance" },
@@ -117,5 +140,8 @@ const App = () => {
     </div>
   );
 };
+
+
+
 
 export default App;
