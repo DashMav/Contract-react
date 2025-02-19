@@ -8,7 +8,7 @@ import "./ChatArea.css";
 function ChatArea({ messages, setMessages }) {
   const [userInput, setUserInput] = useState("");
   const [typingMessage, setTypingMessage] = useState(null);
-  const [typingIndex, setTypingIndex] = useState(0); // ✅ NEW: Track index state
+  const [setTypingIndex] = useState(0); // ✅ NEW: Track index state
   const chatContainerRef = useRef(null);
   const typingIntervalRef = useRef(null); // ✅ NEW: Store interval reference
 

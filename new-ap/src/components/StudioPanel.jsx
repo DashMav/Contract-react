@@ -16,29 +16,33 @@ function StudioPanel({ analysisData }) {
       alert("No analysis data available. Please analyze a document first.");
       return;
     }
-
+  
     setLoading(true);
     setSummary("");
     setTypingText("");
     setSentiment("");
-
+  
     try {
-      const response = await axios.post("http://localhost:8000/generate-summary", {
-        mode: mode,
-        text: analysisData.results[0].analysis,
+      // FormData for FastAPI
+      const formData = new FormData();
+      formData.append("mode", mode);
+      formData.append("text", analysisData.results[0].analysis);
+  
+      const response = await axios.post("http://localhost:8000/generate-summary", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
-
+  
       setSummary(response.data.summary);
       setSentiment(response.data.sentiment || "Neutral");
       setTypingText("");
-
+  
       let i = 0;
       const interval = setInterval(() => {
         setTypingText((prev) => prev + response.data.summary[i]);
         i++;
         if (i >= response.data.summary.length) clearInterval(interval);
       }, 50);
-
+  
     } catch (error) {
       console.error("Error fetching summary:", error);
     } finally {

@@ -19,7 +19,7 @@
   padding: 8px;
   font-size: 16px;
   width: 400px; /* Increased width */
-  background-color: #374151;
+  background-color: #363e4b89;
   color: white;
   border: none;
   border-radius: 5px;
@@ -48,4 +48,22 @@ button {
 button:hover {
   background-color: #000000;
   color: rgb(230, 118, 37);
+}
+
+h2 {
+  font-size: 38px;
+  font-weight: bold;
+  color:rgb(230, 118, 37);
+  display: flex;
+  align-items: baseline;
+}
+
+h2 sub {
+  font-size: 15px;
+  padding: 5px;
+  
+  color: rgba(255, 255, 255, 0.7);
+  margin-left: 4px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }

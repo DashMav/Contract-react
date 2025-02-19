@@ -14,7 +14,7 @@ function Header({ setContractType }) { // Pass setContractType as prop
 
   return (
     <header className="header">
-      <h2>Contract Compliance Checker</h2>
+      <h2>Themis X<sub>Contracts</sub></h2>
 
       <div className="header-controls">
         <select value={contractType} onChange={handleContractChange} className="contract-dropdown">

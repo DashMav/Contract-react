@@ -144,10 +144,19 @@ async def chat(message: str):
 
 # Summary endpoint
 @app.post("/generate-summary")
-async def generate_summary(text: str):
+async def generate_summary(text: str = Form(...), mode: str = Form(...)):
     try:
-        prompt = f"Summarize the following text:\n{text}"
+        # Define summary prompt based on mode
+        if mode == "3-bullet":
+            prompt = f"Summarize the following text in exactly three bullet points:\n{text}"
+        elif mode == "5-bullet":
+            prompt = f"Summarize the following text in exactly five bullet points:\n{text}"
+        else:  # Default to paragraph mode
+            prompt = f"Summarize the following text in a well-structured paragraph:\n{text}"
+
+        # Generate summary using the AI model
         response = model.generate_content([prompt])
+
         return {"summary": response.text}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
