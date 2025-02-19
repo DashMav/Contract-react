@@ -8,6 +8,7 @@ import StudioPanel from './components/studiopanel';
 function App() {
   const [messages, setMessages] = useState([]); // Messages in ChatArea
   const [contractType, setContractType] = useState("Loan Agreement");
+  const [analysisData, setAnalysisData] = useState("");  // ✅ Store analysis result
 
 
   return (
@@ -15,9 +16,9 @@ function App() {
     <div className="app-container">
           <Header setContractType={setContractType} contractType={contractType} />
       <main className="main-content">
-        <SourcesPanel setMessages={setMessages} contractType={contractType} />
+        <SourcesPanel setMessages={setMessages} contractType={contractType} setAnalysisData={setAnalysisData} />
         <ChatArea messages={messages} setMessages={setMessages} />
-        <StudioPanel contractType={contractType} />
+        <StudioPanel contractType={contractType} analysisData={analysisData}/>
       </main>
     </div>
   );
